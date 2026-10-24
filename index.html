@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบกรอกใบแลกเวร - โรงพยาบาลเขลางค์นคร-ราม (A5 แนวนอน)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Signature Pad -->
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  
+  <!-- html2pdf.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Angsana New Local';
+      src: local('Angsana New'), local('AngsanaUPC'), local('TH Sarabun New'), local('Sarabun');
+    }
+
+    body {
+      background-color: #f1f5f9;
+      font-family: 'Angsana New Local', 'AngsanaUPC', 'TH Sarabun New', 'Sarabun', sans-serif;
+      color: #000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* กระดาษ A5 แนวนอน (210mm x 148mm) */
+    .a5-landscape-paper {
+      width: 210mm;
+      height: 148mm;
+      background: #ffffff;
+      padding: 6mm 10mm 5mm 10mm;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      position: relative;
+      margin: 0 auto;
+      box-sizing: border-box;
+      overflow: hidden;
+      font-family: 'Angsana New Local', 'AngsanaUPC', 'TH Sarabun New', 'Sarabun', sans-serif;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    /* ช่องกรอกข้อมูล: แสดงเฉพาะเส้นจุดด้านล่าง */
+    .dotted-input {
+      border: none !important;
+      border-bottom: 1px dotted #222 !important;
+      background: transparent !important;
+      outline: none !important;
+      box-shadow: none !important;
+      padding: 0 4px !important;
+      margin: 0 1px !important;
+      font-family: inherit !important;
+      font-size: inherit !important;
+      color: #000080 !important;
+      font-weight: 600;
+      display: inline-block;
+      vertical-align: baseline;
+    }
+
+    .dotted-input:focus {
+      border-bottom: 1px solid #1d4ed8 !important;
+      background-color: rgba(239, 246, 255, 0.4) !important;
+    }
+
+    /* ตกแต่งสไตล์เลือกและขีดเส้นใต้คำนำหน้า */
+    .prefix-option {
+      cursor: pointer;
+      padding: 0 2px;
+      transition: all 0.15s ease;
+      display: inline-block;
+      user-select: none;
+    }
+
+    .prefix-option.selected {
+      text-decoration: underline !important;
+      text-underline-offset: 3px !important;
+      text-decoration-thickness: 1.5px !important;
+      font-weight: bold !important;
+      color: #000080 !important;
+    }
+
+    /* ช่อง Radio อนุมัติ/ไม่อนุมัติ */
+    .custom-radio {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1px solid #000;
+      display: inline-block;
+      vertical-align: middle;
+      position: relative;
+      margin-right: 4px;
+      cursor: pointer;
+      background-color: #fff;
+    }
+
+    .custom-radio:checked::after {
+      content: "✓";
+      position: absolute;
+      top: -4px;
+      left: 1px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .sig-clickable {
+      cursor: pointer;
+      border: 1px dashed transparent;
+      transition: all 0.2s;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .sig-clickable:hover {
+      border-color: #3b82f6;
+      background-color: rgba(239, 246, 255, 0.5);
+    }
+
+    .sig-clickable img {
+      max-height: 32px;
+      max-width: 140px;
+      object-fit: contain;
+    }
+
+    @page {
+      size: A5 landscape;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: #fff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .a5-landscape-paper {
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 210mm !important;
+        height: 148mm !important;
+        padding: 6mm 10mm 5mm 10mm !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="no-print bg-slate-800 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-file-signature text-amber-400 text-2xl"></i>
+        <div>
+          <h1 class="text-lg font-bold leading-tight">ระบบสร้างใบแลกเวร (A5 แนวนอน)</h1>
+          <p class="text-xs text-slate-300">โรงพยาบาลเขลางค์นคร-ราม</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+        <button onclick="openSubstituteLinkModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-sm transition flex items-center gap-1.5 shadow">
+          <i class="fa-solid fa-link"></i>
+          <span>สร้างลิงก์ให้ผู้ยินยอมเซ็น</span>
+        </button>
+        <button onclick="openManagerLinkModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm transition flex items-center gap-1.5 shadow">
+          <i class="fa-solid fa-link"></i>
+          <span>สร้างลิงก์ให้หัวหน้าอนุมัติ</span>
+        </button>
+        <button onclick="toggleSidebar()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-pen-to-square text-amber-400"></i>
+          <span>แผงกรอกข้อมูล</span>
+        </button>
+        <button onclick="fillDemoData()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>ตัวอย่างข้อมูล</span>
+        </button>
+        <button onclick="clearForm()" class="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white rounded text-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>ล้างข้อมูล</span>
+        </button>
+        <button onclick="window.print()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded text-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-print"></i>
+          <span>พิมพ์</span>
+        </button>
+        <button onclick="exportPDF()" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded text-sm transition flex items-center gap-1.5 shadow">
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>Export PDF</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 flex gap-6 justify-center items-start">
+    
+    <!-- Preview Area -->
+    <div class="flex-1 flex flex-col items-center overflow-x-auto pb-8">
+      
+      <!-- A5 Landscape Document -->
+      <div id="document-paper" class="a5-landscape-paper">
+        
+        <!-- Header -->
+        <div class="text-center mb-1">
+          <div class="font-bold text-xl tracking-wide">โรงพยาบาลเขลางค์นคร-ราม</div>
+          <div class="font-bold text-lg underline tracking-wide">ใบแลกเวร</div>
+        </div>
+
+        <!-- Date -->
+        <div class="text-right text-base mb-2">
+          วันที่ 
+          <input type="text" id="doc_doc_day" class="dotted-input text-center" style="width: 35px;" oninput="syncInput('doc_doc_day', 'side_doc_day')">
+          เดือน 
+          <input type="text" id="doc_doc_month" class="dotted-input text-center" style="width: 90px;" oninput="syncInput('doc_doc_month', 'side_doc_month')">
+          พ.ศ. 
+          <input type="text" id="doc_doc_year" class="dotted-input text-center" style="width: 50px;" oninput="syncInput('doc_doc_year', 'side_doc_year')">
+        </div>
+
+        <!-- Body Content -->
+        <div class="space-y-1.5 text-base leading-relaxed">
+          <!-- Line 1: ผู้ขอแลกเวร -->
+          <div>
+            ข้าพเจ้า 
+            <span class="inline-flex items-center">
+              <span id="app_prefix_mr" class="prefix-option" onclick="selectPrefix('applicant', 'mr')">นาย</span>/
+              <span id="app_prefix_mrs" class="prefix-option" onclick="selectPrefix('applicant', 'mrs')">นาง</span>/
+              <span id="app_prefix_miss" class="prefix-option" onclick="selectPrefix('applicant', 'miss')">นางสาว</span>
+            </span>
+            <input type="text" id="doc_applicant_name" class="dotted-input" style="width: 200px;" oninput="syncInput('doc_applicant_name', 'side_applicant_name')">
+            ตำแหน่ง 
+            <input type="text" id="doc_applicant_position" class="dotted-input" style="width: 220px;" oninput="syncInput('doc_applicant_position', 'side_applicant_position')">
+          </div>
+
+          <!-- Line 2 -->
+          <div>
+            ประจำแผนก 
+            <input type="text" id="doc_department" class="dotted-input" style="width: 170px;" oninput="syncInput('doc_department', 'side_department')">
+            ตกลงแลกเวรการปฏิบัติงาน/ยกเวรปฏิบัติงานซึ่งเป็นเวรการปฏิบัติงานเวลา 
+            <input type="text" id="doc_shift_time_1" class="dotted-input" style="width: 120px;" oninput="syncInput('doc_shift_time_1', 'side_shift_time_1')">
+          </div>
+
+          <!-- Line 3: ผู้รับแลกเวร -->
+          <div>
+            เป็นครั้งที่ 
+            <input type="text" id="doc_exchange_count" class="dotted-input text-center" style="width: 45px;" oninput="syncInput('doc_exchange_count', 'side_exchange_count')">
+            โดยให้ 
+            <span class="inline-flex items-center">
+              <span id="sub_prefix_mr" class="prefix-option" onclick="selectPrefix('substitute', 'mr')">นาย</span>/
+              <span id="sub_prefix_mrs" class="prefix-option" onclick="selectPrefix('substitute', 'mrs')">นาง</span>/
+              <span id="sub_prefix_miss" class="prefix-option" onclick="selectPrefix('substitute', 'miss')">นางสาว</span>
+            </span>
+            <input type="text" id="doc_substitute_name" class="dotted-input" style="width: 190px;" oninput="syncInput('doc_substitute_name', 'side_substitute_name')">
+            ขึ้นปฏิบัติงานแทนข้าพเจ้า
+          </div>
+
+          <!-- Line 4 -->
+          <div>
+            ในเวลา 
+            <input type="text" id="doc_shift_time_2" class="dotted-input" style="width: 100px;" oninput="syncInput('doc_shift_time_2', 'side_shift_time_2')">
+            วันที่ 
+            <input type="text" id="doc_substitute_date" class="dotted-input" style="width: 120px;" oninput="syncInput('doc_substitute_date', 'side_substitute_date')">
+            และข้าพเจ้าจะชดใช้แทนในเวลา 
+            <input type="text" id="doc_payback_time" class="dotted-input" style="width: 100px;" oninput="syncInput('doc_payback_time', 'side_payback_time')">
+            วันที่ 
+            <input type="text" id="doc_payback_date" class="dotted-input" style="width: 110px;" oninput="syncInput('doc_payback_date', 'side_payback_date')">
+          </div>
+
+          <!-- Line 5 & 6 -->
+          <div>
+            ทั้งนี้เนื่องจาก 
+            <input type="text" id="doc_reason_1" class="dotted-input" style="width: 590px;" oninput="syncInput('doc_reason_1', 'side_reason_1')">
+          </div>
+          <div>
+            <input type="text" id="doc_reason_2" class="dotted-input" style="width: 670px;" oninput="syncInput('doc_reason_2', 'side_reason_2')">
+          </div>
+        </div>
+
+        <!-- Applicant & Substitute Signatures -->
+        <div class="grid grid-cols-2 gap-4 my-2 pt-1 text-base">
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1">
+              <span>ลงชื่อ</span>
+              <div class="sig-clickable inline-block border-b border-dotted border-gray-600" style="width: 160px;" onclick="openSigModal('applicant')">
+                <span id="sig_preview_applicant" class="text-xs text-blue-600 no-print">(คลิกเพื่อเซ็น)</span>
+                <img id="sig_img_applicant" class="hidden" alt="ลายเซ็นผู้แลกเวร">
+              </div>
+              <span class="ml-1">ผู้แลกเวร</span>
+            </div>
+            <div class="mt-0.5">
+              ( <input type="text" id="doc_applicant_fullname" class="dotted-input text-center" style="width: 170px;" oninput="syncInput('doc_applicant_fullname', 'side_applicant_fullname')"> )
+            </div>
+          </div>
+
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1">
+              <span>ลงชื่อ</span>
+              <div class="sig-clickable inline-block border-b border-dotted border-gray-600" style="width: 160px;" onclick="openSubstituteLinkModal()" title="คลิกเพื่อส่งลิงก์หรือเซ็นยินยอม">
+                <span id="sig_preview_substitute" class="text-xs text-emerald-600 no-print">(คลิกให้ผู้ยินยอมเซ็น)</span>
+                <img id="sig_img_substitute" class="hidden" alt="ลายเซ็นผู้ยินยอม">
+              </div>
+              <span class="ml-1">ผู้ยินยอมให้แลก</span>
+            </div>
+            <div class="mt-0.5">
+              ( <input type="text" id="doc_substitute_fullname" class="dotted-input text-center" style="width: 170px;" oninput="syncInput('doc_substitute_fullname', 'side_substitute_fullname')"> )
+            </div>
+          </div>
+        </div>
+
+        <!-- Approval & HR Section -->
+        <div class="mt-1 pt-1 border-t border-gray-300 grid grid-cols-12 gap-2 text-base">
+          <div class="col-span-5 pr-2 border-r border-gray-200">
+            <div class="font-bold">การอนุมัติ</div>
+            <div class="pl-2 space-y-0.5 my-0.5">
+              <label class="flex items-center cursor-pointer select-none">
+                <input type="radio" name="approval_status" value="approved" class="custom-radio" onclick="syncRadio('approved')">
+                <span>อนุมัติให้แลกเวร</span>
+              </label>
+              <label class="flex items-center cursor-pointer select-none">
+                <input type="radio" name="approval_status" value="rejected" class="custom-radio" onclick="syncRadio('rejected')">
+                <span>ไม่อนุมัติให้แลกเวร</span>
+              </label>
+            </div>
+            <div class="mt-1">
+              เนื่องจาก 
+              <input type="text" id="doc_approval_reason" class="dotted-input" style="width: 190px;" oninput="syncInput('doc_approval_reason', 'side_approval_reason')">
+            </div>
+          </div>
+
+          <!-- Approver & HR -->
+          <div class="col-span-7 pl-2 flex flex-col justify-between">
+            <div class="flex items-center gap-1">
+              <span>ลงชื่อ</span>
+              <div class="sig-clickable border-b border-dotted border-gray-600" style="width: 140px;" onclick="openManagerLinkModal()" title="คลิกเพื่อส่งลิงก์หรือเซ็นอนุมัติ">
+                <span id="sig_preview_approver" class="text-xs text-blue-600 no-print">(คลิกให้หัวหน้าเซ็น)</span>
+                <img id="sig_img_approver" class="hidden" alt="ลายเซ็นผู้อนุมัติ">
+              </div>
+              <span class="font-bold text-sm">หัวหน้าแผนก/ผู้อนุมัติ</span>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <div class="sig-clickable border-b border-dotted border-gray-600" style="width: 150px;" onclick="openSigModal('hr')">
+                <span id="sig_preview_hr" class="text-xs text-blue-600 no-print">(คลิกเซ็นงานบุคคล)</span>
+                <img id="sig_img_hr" class="hidden" alt="ลายเซ็นงานบุคคล">
+              </div>
+              <span class="text-sm">เจ้าหน้าที่งานบุคคล</span>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <input type="text" id="doc_hr_receive_date" class="dotted-input text-center" style="width: 150px;" placeholder="วัน/เดือน/ปี" oninput="syncInput('doc_hr_receive_date', 'side_hr_receive_date')">
+              <span class="text-sm">วันที่รับเอกสาร</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Red Note -->
+        <div class="mt-2 text-xs text-red-600 font-semibold tracking-tight">
+          หมายเหตุ: ใบแลกเวรต้องส่งงานบุคคลก่อนมีการขึ้นทำงานในเวรที่แลกไม่น้อยกว่า 1 วัน
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right Sidebar Form -->
+    <aside id="sidebar-panel" class="no-print w-96 bg-white rounded-xl shadow-lg border border-slate-200 p-5 shrink-0 hidden lg:block">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b">
+        <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-indigo-600"></i>
+          <span>ฟอร์มกรอกข้อมูล</span>
+        </h2>
+        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">A5 แนวนอน</span>
+      </div>
+
+      <div class="space-y-4 text-sm max-h-[calc(100vh-160px)] overflow-y-auto pr-1">
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <label class="block font-semibold text-slate-700 mb-1.5 text-xs uppercase tracking-wider">วันที่ทำเอกสาร</label>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <span class="text-xs text-slate-500">วันที่</span>
+              <input type="text" id="side_doc_day" class="w-full border rounded px-2 py-1 text-sm" placeholder="15" oninput="syncInput('side_doc_day', 'doc_doc_day')">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">เดือน</span>
+              <input type="text" id="side_doc_month" class="w-full border rounded px-2 py-1 text-sm" placeholder="ตุลาคม" oninput="syncInput('side_doc_month', 'doc_doc_month')">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">พ.ศ.</span>
+              <input type="text" id="side_doc_year" class="w-full border rounded px-2 py-1 text-sm" placeholder="2569" oninput="syncInput('side_doc_year', 'doc_doc_year')">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+          <label class="block font-semibold text-slate-700 text-xs uppercase tracking-wider">ข้อมูลผู้ขอแลกเวร</label>
+          <div>
+            <span class="text-xs text-slate-500">คำนำหน้า</span>
+            <select id="side_applicant_prefix" class="w-full border rounded px-2 py-1 text-sm" onchange="selectPrefix('applicant', this.value)">
+              <option value="">-- เลือกคำนำหน้า --</option>
+              <option value="mr">นาย</option>
+              <option value="mrs">นาง</option>
+              <option value="miss">นางสาว</option>
+            </select>
+          </div>
+          <div>
+            <span class="text-xs text-slate-500">ชื่อ-นามสกุล</span>
+            <input type="text" id="side_applicant_name" class="w-full border rounded px-2 py-1 text-sm" placeholder="สมชาย ใจดี" oninput="syncBothNames('applicant', this.value)">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-xs text-slate-500">ตำแหน่ง</span>
+              <input type="text" id="side_applicant_position" class="w-full border rounded px-2 py-1 text-sm" placeholder="นักรังสีการแพทย์" oninput="syncInput('side_applicant_position', 'doc_applicant_position')">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">แผนก</span>
+              <input type="text" id="side_department" class="w-full border rounded px-2 py-1 text-sm" placeholder="รังสีวินิจฉัย" oninput="syncInput('side_department', 'doc_department')">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-xs text-slate-500">เวรปฏิบัติงานเวลา</span>
+              <input type="text" id="side_shift_time_1" class="w-full border rounded px-2 py-1 text-sm" placeholder="08.00 - 16.00 น." oninput="syncInput('side_shift_time_1', 'doc_shift_time_1')">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">แลกเป็นครั้งที่</span>
+              <input type="text" id="side_exchange_count" class="w-full border rounded px-2 py-1 text-sm" placeholder="1" oninput="syncInput('side_exchange_count', 'doc_exchange_count')">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+          <label class="block font-semibold text-slate-700 text-xs uppercase tracking-wider">ข้อมูลผู้ปฏิบัติงานแทน</label>
+          <div>
+            <span class="text-xs text-slate-500">คำนำหน้า</span>
+            <select id="side_substitute_prefix" class="w-full border rounded px-2 py-1 text-sm" onchange="selectPrefix('substitute', this.value)">
+              <option value="">-- เลือกคำนำหน้า --</option>
+              <option value="mr">นาย</option>
+              <option value="mrs">นาง</option>
+              <option value="miss">นางสาว</option>
+            </select>
+          </div>
+          <div>
+            <span class="text-xs text-slate-500">ชื่อ-นามสกุล ผู้ปฏิบัติงานแทน</span>
+            <input type="text" id="side_substitute_name" class="w-full border rounded px-2 py-1 text-sm" placeholder="วิภา สุขเสริฐ" oninput="syncBothNames('substitute', this.value)">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-xs text-slate-500">ขึ้นแทนเวลา</span>
+              <input type="text" id="side_shift_time_2" class="w-full border rounded px-2 py-1 text-sm" placeholder="08.00 - 16.00 น." oninput="syncInput('side_shift_time_2', 'doc_shift_time_2')">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">ขึ้นแทนวันที่</span>
+              <input type="text" id="side_substitute_date" class="w-full border rounded px-2 py-1 text-sm" placeholder="20 ต.ค. 2569" oninput="syncInput('side_substitute_date', 'doc_substitute_date')">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-xs text-slate-500">ชดใช้แทนเวลา</span>
+              <input type="text" id="side_payback_time" class="w-full border rounded px-2 py-1 text-sm" placeholder="16.00 - 24.00 น." oninput="syncInput('side_payback_time', 'doc_payback_time')">
+            </div>
+            <div>
+              <span class="text-xs text-slate-500">ชดใช้แทนวันที่</span>
+              <input type="text" id="side_payback_date" class="w-full border rounded px-2 py-1 text-sm" placeholder="25 ต.ค. 2569" oninput="syncInput('side_payback_date', 'doc_payback_date')">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+          <label class="block font-semibold text-slate-700 text-xs uppercase tracking-wider">เหตุผลการขอแลกเวร</label>
+          <input type="text" id="side_reason_1" class="w-full border rounded px-2 py-1 text-sm" placeholder="ติดภารกิจอบรมทางวิชาการประจำปี" oninput="syncInput('side_reason_1', 'doc_reason_1')">
+          <input type="text" id="side_reason_2" class="w-full border rounded px-2 py-1 text-sm" placeholder="(บรรทัดที่ 2 เพิ่มเติมถ้ามี)" oninput="syncInput('side_reason_2', 'doc_reason_2')">
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+          <label class="block font-semibold text-slate-700 text-xs uppercase tracking-wider">การจัดการลายเซ็น</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="openSigModal('applicant')" class="w-full py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded text-xs font-medium text-slate-700 flex items-center justify-center gap-1">
+              <i class="fa-solid fa-signature text-blue-600"></i> เซ็น: ผู้แลกเวร
+            </button>
+            <button onclick="openSubstituteLinkModal()" class="w-full py-1.5 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 rounded text-xs font-medium text-emerald-700 flex items-center justify-center gap-1">
+              <i class="fa-solid fa-link text-emerald-600"></i> ลิงก์: ผู้ยินยอม
+            </button>
+            <button onclick="openManagerLinkModal()" class="w-full py-1.5 bg-blue-50 border border-blue-300 hover:bg-blue-100 rounded text-xs font-medium text-blue-700 flex items-center justify-center gap-1 col-span-2">
+              <i class="fa-solid fa-link text-blue-600"></i> ลิงก์: หัวหน้าแผนก
+            </button>
+            <button onclick="openSigModal('hr')" class="w-full py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded text-xs font-medium text-slate-700 flex items-center justify-center gap-1 col-span-2">
+              <i class="fa-solid fa-signature text-emerald-600"></i> เซ็น: งานบุคคล
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+          <label class="block font-semibold text-slate-700 text-xs uppercase tracking-wider">ผลการพิจารณาอนุมัติ</label>
+          <div class="flex gap-4">
+            <label class="inline-flex items-center text-xs text-slate-700 cursor-pointer">
+              <input type="radio" name="side_approval" value="approved" class="mr-1" onclick="syncRadio('approved')"> อนุมัติ
+            </label>
+            <label class="inline-flex items-center text-xs text-slate-700 cursor-pointer">
+              <input type="radio" name="side_approval" value="rejected" class="mr-1" onclick="syncRadio('rejected')"> ไม่อนุมัติ
+            </label>
+          </div>
+          <div>
+            <span class="text-xs text-slate-500">เหตุผล / หมายเหตุอนุมัติ</span>
+            <input type="text" id="side_approval_reason" class="w-full border rounded px-2 py-1 text-sm" placeholder="อนุมัติการแลกเวรตามเสนอ" oninput="syncInput('side_approval_reason', 'doc_approval_reason')">
+          </div>
+          <div>
+            <span class="text-xs text-slate-500">วันที่รับเอกสาร (งานบุคคล)</span>
+            <input type="text" id="side_hr_receive_date" class="w-full border rounded px-2 py-1 text-sm" placeholder="15 ต.ค. 2569" oninput="syncInput('side_hr_receive_date', 'doc_hr_receive_date')">
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Modal สำหรับวาดลายเซ็นทั่วไป -->
+  <div id="sig-modal" class="no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-150">
+      <div class="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
+        <h3 id="modal-title" class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-pen-nib text-amber-400"></i>
+          <span>วาดลายเซ็น / ลายมือชื่อ</span>
+        </h3>
+        <button onclick="closeSigModal()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <div class="border-2 border-dashed border-slate-300 rounded-lg p-1 bg-slate-50 flex justify-center">
+          <canvas id="signature-pad" class="bg-white rounded border border-slate-200 cursor-crosshair" width="380" height="160"></canvas>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-500">
+          <button onclick="clearSigPad()" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded transition flex items-center gap-1">
+            <i class="fa-solid fa-eraser"></i> ล้างกระดาน
+          </button>
+          
+          <label class="cursor-pointer px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded transition flex items-center gap-1">
+            <i class="fa-solid fa-upload"></i> อัปโหลดรูป
+            <input type="file" accept="image/*" class="hidden" onchange="uploadSigImage(event)">
+          </label>
+        </div>
+      </div>
+
+      <div class="bg-slate-100 px-4 py-3 flex justify-end gap-2 border-t">
+        <button onclick="closeSigModal()" class="px-3 py-1.5 border border-slate-300 text-slate-700 rounded text-xs font-semibold hover:bg-slate-200 transition">
+          ยกเลิก
+        </button>
+        <button onclick="saveSignature()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold shadow transition flex items-center gap-1">
+          <i class="fa-solid fa-check"></i> บันทึกลายเซ็น
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 1: สร้างลิงก์และหน้าอนุมัติสำหรับผู้ยินยอมให้แลกเวร -->
+  <div id="substitute-modal" class="no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="bg-emerald-800 text-white px-4 py-3 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-user-check text-amber-400"></i>
+          <span>ระบบลงนามยินยอมปฏิบัติงานแทน (สำหรับผู้รับแลกเวร)</span>
+        </h3>
+        <button onclick="closeSubstituteModal()" class="text-slate-300 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-sm">
+        <div id="substitute-tab-link" class="space-y-3">
+          <p class="text-slate-600 text-xs">ส่งลิงก์นี้ให้กับเพื่อนพนักงานที่จะมาปฏิบัติงานแทน เพื่อให้กดเข้ามาเซ็นยินยอมรับเวร:</p>
+          <div class="flex gap-2">
+            <input type="text" id="substitute-share-link" readonly class="w-full bg-slate-100 border rounded px-3 py-2 text-xs font-mono text-slate-700 select-all" value="">
+            <button onclick="copySubstituteLink()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-medium shrink-0 flex items-center gap-1">
+              <i class="fa-solid fa-copy"></i> คัดลอกลิงก์
+            </button>
+          </div>
+          <div class="text-right">
+            <button onclick="switchToSubstituteSignTab()" class="text-xs text-emerald-600 hover:underline font-semibold flex items-center gap-1 ml-auto">
+              จำลองหน้าต่างเข้าสู่ระบบของผู้ยินยอม (กดเพื่อเซ็นทันที) <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="substitute-tab-sign" class="space-y-3 hidden">
+          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-xs text-emerald-800">
+            <strong>เข้าสู่ระบบในฐานะ:</strong> ผู้ยินยอมปฏิบัติงานแทน (ผู้รับแลกเวร)
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1 text-xs">เลือกคำนำหน้าผู้ยินยอม:</label>
+            <div class="flex gap-4 text-xs">
+              <label class="inline-flex items-center"><input type="radio" name="sub_portal_prefix" value="mr" onclick="selectPrefix('substitute', 'mr')"> นาย</label>
+              <label class="inline-flex items-center"><input type="radio" name="sub_portal_prefix" value="mrs" onclick="selectPrefix('substitute', 'mrs')"> นาง</label>
+              <label class="inline-flex items-center"><input type="radio" name="sub_portal_prefix" value="miss" onclick="selectPrefix('substitute', 'miss')"> นางสาว</label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1 text-xs">ยืนยันชื่อ-นามสกุล:</label>
+            <input type="text" id="substitute_portal_fullname" class="w-full border rounded px-3 py-1.5 text-sm" placeholder="กรอกชื่อ-นามสกุลจริง">
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1 text-xs">วาดลายเซ็นผู้ยินยอม:</label>
+            <div class="border-2 border-dashed border-slate-300 rounded-lg p-1 bg-slate-50 flex justify-center">
+              <canvas id="substitute-signature-pad" class="bg-white rounded border border-slate-200 cursor-crosshair" width="360" height="130"></canvas>
+            </div>
+            <div class="flex justify-between mt-1">
+              <button onclick="substitutePad.clear()" class="text-xs text-slate-500 hover:text-slate-800"><i class="fa-solid fa-eraser"></i> ล้างลายเซ็น</button>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2 border-t">
+            <button onclick="switchToSubstituteLinkTab()" class="text-xs text-slate-600 hover:underline"><i class="fa-solid fa-arrow-left"></i> กลับไปหน้าลิงก์</button>
+            <button onclick="submitSubstituteApproval()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold shadow flex items-center gap-1.5">
+              <i class="fa-solid fa-check-circle"></i> ยืนยันและบันทึกลายเซ็น
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: สร้างลิงก์และหน้าอนุมัติสำหรับหัวหน้าแผนก -->
+  <div id="manager-modal" class="no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="bg-blue-900 text-white px-4 py-3 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-user-shield text-amber-400"></i>
+          <span>ระบบพิจารณาและลงนามอนุมัติ (สำหรับหัวหน้าแผนก)</span>
+        </h3>
+        <button onclick="closeManagerModal()" class="text-slate-300 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-sm">
+        <div id="manager-tab-link" class="space-y-3">
+          <p class="text-slate-600 text-xs">ส่งลิงก์นี้ให้กับหัวหน้าแผนกเพื่อพิจารณาและลงนามอนุมัติใบแลกเวร:</p>
+          <div class="flex gap-2">
+            <input type="text" id="manager-share-link" readonly class="w-full bg-slate-100 border rounded px-3 py-2 text-xs font-mono text-slate-700 select-all" value="">
+            <button onclick="copyManagerLink()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-medium shrink-0 flex items-center gap-1">
+              <i class="fa-solid fa-copy"></i> คัดลอกลิงก์
+            </button>
+          </div>
+          <div class="text-right">
+            <button onclick="switchToManagerSignTab()" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1 ml-auto">
+              จำลองหน้าต่างเข้าสู่ระบบของหัวหน้า (กดเพื่อลงนามทันที) <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="manager-tab-sign" class="space-y-3 hidden">
+          <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800">
+            <strong>เข้าสู่ระบบในฐานะ:</strong> หัวหน้าแผนก / ผู้อนุมัติ (โรงพยาบาลเขลางค์นคร-ราม)
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1 text-xs">ผลการพิจารณา:</label>
+            <div class="flex gap-4">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="radio" name="manager_portal_status" value="approved" checked class="mr-1.5"> อนุมัติให้แลกเวร
+              </label>
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="radio" name="manager_portal_status" value="rejected" class="mr-1.5"> ไม่อนุมัติให้แลกเวร
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1 text-xs">เหตุผล / ความเห็น:</label>
+            <input type="text" id="manager_portal_reason" class="w-full border rounded px-3 py-1.5 text-sm" value="อนุมัติการแลกเวรตามเสนอ">
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-700 mb-1 text-xs">วาดลายเซ็นหัวหน้าแผนก:</label>
+            <div class="border-2 border-dashed border-slate-300 rounded-lg p-1 bg-slate-50 flex justify-center">
+              <canvas id="manager-signature-pad" class="bg-white rounded border border-slate-200 cursor-crosshair" width="360" height="130"></canvas>
+            </div>
+            <div class="flex justify-between mt-1">
+              <button onclick="managerPad.clear()" class="text-xs text-slate-500 hover:text-slate-800"><i class="fa-solid fa-eraser"></i> ล้างลายเซ็น</button>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2 border-t">
+            <button onclick="switchToManagerLinkTab()" class="text-xs text-slate-600 hover:underline"><i class="fa-solid fa-arrow-left"></i> กลับไปหน้าลิงก์</button>
+            <button onclick="submitManagerApproval()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold shadow flex items-center gap-1.5">
+              <i class="fa-solid fa-check-circle"></i> ยืนยันการอนุมัติและลงนาม
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let signaturePad = null;
+    let managerPad = null;
+    let substitutePad = null;
+    let currentRole = null;
+
+    // สถานะเลือกคำนำหน้า
+    const prefixState = {
+      applicant: '',
+      substitute: ''
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // General Pad
+      const canvas = document.getElementById('signature-pad');
+      signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)',
+        penColor: 'rgb(0, 0, 128)'
+      });
+
+      // Manager Pad
+      const mgrCanvas = document.getElementById('manager-signature-pad');
+      managerPad = new SignaturePad(mgrCanvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)',
+        penColor: 'rgb(0, 0, 128)'
+      });
+
+      // Substitute Pad
+      const subCanvas = document.getElementById('substitute-signature-pad');
+      substitutePad = new SignaturePad(subCanvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)',
+        penColor: 'rgb(0, 0, 128)'
+      });
+
+      // Set default share links
+      const currentUrl = window.location.href.split('?')[0];
+      document.getElementById('manager-share-link').value = currentUrl + '?mode=approve&role=manager';
+      document.getElementById('substitute-share-link').value = currentUrl + '?mode=substitute&role=substitute';
+
+      // Check URL parameters for auto opening approval modes
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') === 'approve') {
+        openManagerLinkModal();
+        switchToManagerSignTab();
+      } else if (urlParams.get('mode') === 'substitute') {
+        openSubstituteLinkModal();
+        switchToSubstituteSignTab();
+      }
+    });
+
+    // ฟังก์ชันเลือกคำนำหน้าชื่อ และขีดเส้นใต้คำที่เลือก
+    function selectPrefix(role, prefix) {
+      prefixState[role] = prefix;
+
+      const prefixMap = {
+        applicant: { mr: 'app_prefix_mr', mrs: 'app_prefix_mrs', miss: 'app_prefix_miss', side: 'side_applicant_prefix' },
+        substitute: { mr: 'sub_prefix_mr', mrs: 'sub_prefix_mrs', miss: 'sub_prefix_miss', side: 'side_substitute_prefix' }
+      };
+
+      const cfg = prefixMap[role];
+      if (!cfg) return;
+
+      // ปลดขีดเส้นใต้เดิมทั้งหมด
+      ['mr', 'mrs', 'miss'].forEach(type => {
+        const el = document.getElementById(cfg[type]);
+        if (el) el.classList.remove('selected');
+      });
+
+      // ขีดเส้นใต้คำนำหน้าที่เลือก
+      if (prefix && cfg[prefix]) {
+        const selectedEl = document.getElementById(cfg[prefix]);
+        if (selectedEl) selectedEl.classList.add('selected');
+      }
+
+      // ซิงค์มายัง Dropdown ใน Sidebar
+      const sideSelect = document.getElementById(cfg.side);
+      if (sideSelect) sideSelect.value = prefix;
+
+      // ซิงค์ไปยัง Radio ใน Modal ของผู้ยินยอม
+      if (role === 'substitute') {
+        const subRadios = document.querySelectorAll('input[name="sub_portal_prefix"]');
+        subRadios.forEach(r => r.checked = (r.value === prefix));
+      }
+    }
+
+    function syncInput(sourceId, targetId) {
+      const sourceEl = document.getElementById(sourceId);
+      const targetEl = document.getElementById(targetId);
+      if (sourceEl && targetEl) {
+        targetEl.value = sourceEl.value;
+      }
+    }
+
+    function syncBothNames(role, val) {
+      if (role === 'applicant') {
+        document.getElementById('doc_applicant_name').value = val;
+        document.getElementById('side_applicant_name').value = val;
+        document.getElementById('doc_applicant_fullname').value = val;
+      } else if (role === 'substitute') {
+        document.getElementById('doc_substitute_name').value = val;
+        document.getElementById('side_substitute_name').value = val;
+        document.getElementById('doc_substitute_fullname').value = val;
+        document.getElementById('substitute_portal_fullname').value = val;
+      }
+    }
+
+    function syncRadio(val) {
+      document.querySelectorAll('input[name="approval_status"]').forEach(r => r.checked = (r.value === val));
+      document.querySelectorAll('input[name="side_approval"]').forEach(r => r.checked = (r.value === val));
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar-panel').classList.toggle('hidden');
+    }
+
+    function openSigModal(role) {
+      currentRole = role;
+      const roleTitles = {
+        'applicant': 'ลายเซ็นผู้ขอแลกเวร',
+        'substitute': 'ลายเซ็นผู้ยินยอมให้แลกเวร',
+        'hr': 'ลายเซ็นเจ้าหน้าที่งานบุคคล'
+      };
+      document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-pen-nib text-amber-400"></i> <span>${roleTitles[role]}</span>`;
+      signaturePad.clear();
+      document.getElementById('sig-modal').classList.remove('hidden');
+    }
+
+    function closeSigModal() {
+      document.getElementById('sig-modal').classList.add('hidden');
+      currentRole = null;
+    }
+
+    function clearSigPad() {
+      if (signaturePad) signaturePad.clear();
+    }
+
+    function saveSignature() {
+      if (!currentRole) return;
+      if (signaturePad.isEmpty()) {
+        alert('กรุณาวาดลายเซ็นก่อนบันทึก');
+        return;
+      }
+      applySignatureImage(currentRole, signaturePad.toDataURL('image/png'));
+      closeSigModal();
+    }
+
+    function uploadSigImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        if (currentRole) {
+          applySignatureImage(currentRole, event.target.result);
+          closeSigModal();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function applySignatureImage(role, dataUrl) {
+      const imgEl = document.getElementById(`sig_img_${role}`);
+      const previewEl = document.getElementById(`sig_preview_${role}`);
+      if (imgEl) { imgEl.src = dataUrl; imgEl.classList.remove('hidden'); }
+      if (previewEl) { previewEl.classList.add('hidden'); }
+    }
+
+    // Substitute Link Modal Handlers
+    function openSubstituteLinkModal() {
+      document.getElementById('substitute-modal').classList.remove('hidden');
+      switchToSubstituteLinkTab();
+      
+      const currentSubName = document.getElementById('doc_substitute_name').value;
+      if (currentSubName) {
+        document.getElementById('substitute_portal_fullname').value = currentSubName;
+      }
+    }
+
+    function closeSubstituteModal() {
+      document.getElementById('substitute-modal').classList.add('hidden');
+    }
+
+    function switchToSubstituteLinkTab() {
+      document.getElementById('substitute-tab-link').classList.remove('hidden');
+      document.getElementById('substitute-tab-sign').classList.add('hidden');
+    }
+
+    function switchToSubstituteSignTab() {
+      document.getElementById('substitute-tab-link').classList.add('hidden');
+      document.getElementById('substitute-tab-sign').classList.remove('hidden');
+      setTimeout(() => { substitutePad.resizeCanvas(); }, 100);
+    }
+
+    function copySubstituteLink() {
+      const linkInput = document.getElementById('substitute-share-link');
+      linkInput.select();
+      linkInput.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(linkInput.value);
+      alert('คัดลอกลิงก์สำหรับส่งให้ผู้ยินยอมเรียบร้อยแล้ว!');
+    }
+
+    function submitSubstituteApproval() {
+      if (substitutePad.isEmpty()) {
+        alert('กรุณาวาดลายเซ็นผู้ยินยอมก่อนยืนยัน');
+        return;
+      }
+
+      const nameVal = document.getElementById('substitute_portal_fullname').value;
+      if (nameVal) {
+        syncBothNames('substitute', nameVal);
+      }
+
+      applySignatureImage('substitute', substitutePad.toDataURL('image/png'));
+
+      alert('ลงนามยินยอมปฏิบัติงานแทนเรียบร้อยแล้ว ลายเซ็นถูกอัปเดตลงในใบแลกเวรโดยอัตโนมัติ!');
+      closeSubstituteModal();
+    }
+
+    // Manager Link Modal Handlers
+    function openManagerLinkModal() {
+      document.getElementById('manager-modal').classList.remove('hidden');
+      switchToManagerLinkTab();
+    }
+
+    function closeManagerModal() {
+      document.getElementById('manager-modal').classList.add('hidden');
+    }
+
+    function switchToManagerLinkTab() {
+      document.getElementById('manager-tab-link').classList.remove('hidden');
+      document.getElementById('manager-tab-sign').classList.add('hidden');
+    }
+
+    function switchToManagerSignTab() {
+      document.getElementById('manager-tab-link').classList.add('hidden');
+      document.getElementById('manager-tab-sign').classList.remove('hidden');
+      setTimeout(() => { managerPad.resizeCanvas(); }, 100);
+    }
+
+    function copyManagerLink() {
+      const linkInput = document.getElementById('manager-share-link');
+      linkInput.select();
+      linkInput.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(linkInput.value);
+      alert('คัดลอกลิงก์สำหรับส่งให้หัวหน้าแผนกเรียบร้อยแล้ว!');
+    }
+
+    function submitManagerApproval() {
+      if (managerPad.isEmpty()) {
+        alert('กรุณาลงลายเซ็นหัวหน้าแผนกก่อนยืนยัน');
+        return;
+      }
+
+      const selectedStatus = document.querySelector('input[name="manager_portal_status"]:checked').value;
+      const reasonVal = document.getElementById('manager_portal_reason').value;
+
+      syncRadio(selectedStatus);
+      document.getElementById('doc_approval_reason').value = reasonVal;
+      document.getElementById('side_approval_reason').value = reasonVal;
+
+      applySignatureImage('approver', managerPad.toDataURL('image/png'));
+
+      alert('บันทึกการอนุมัติและลงนามเรียบร้อยแล้ว ลายเซ็นถูกอัปเดตลงในใบแลกเวรโดยอัตโนมัติ!');
+      closeManagerModal();
+    }
+
+    function fillDemoData() {
+      document.getElementById('doc_doc_day').value = "24";
+      document.getElementById('doc_doc_month').value = "ตุลาคม";
+      document.getElementById('doc_doc_year').value = "2569";
+      
+      selectPrefix('applicant', 'mr');
+      syncBothNames('applicant', "สมชาย ใจดี");
+      document.getElementById('doc_applicant_position').value = "นักรังสีการแพทย์";
+      document.getElementById('doc_department').value = "รังสีวินิจฉัย";
+      document.getElementById('doc_shift_time_1').value = "08.00 - 16.00 น.";
+      document.getElementById('doc_exchange_count').value = "1";
+      
+      selectPrefix('substitute', 'miss');
+      syncBothNames('substitute', "วิภา สุขเสริฐ");
+      document.getElementById('doc_shift_time_2').value = "08.00 - 16.00 น.";
+      document.getElementById('doc_substitute_date').value = "20 ต.ค. 2569";
+      document.getElementById('doc_payback_time').value = "16.00 - 24.00 น.";
+      document.getElementById('doc_payback_date').value = "25 ต.ค. 2569";
+      
+      document.getElementById('doc_reason_1').value = "ติดภารกิจเข้าร่วมการอบรมความปลอดภัยทางรังสีประจำปี";
+      document.getElementById('doc_approval_reason').value = "อนุมัติให้แลกเวรตามเสนอ";
+      document.getElementById('doc_hr_receive_date').value = "24 ต.ค. 2569";
+
+      // ซิงค์ Sidebar
+      document.getElementById('side_doc_day').value = "24";
+      document.getElementById('side_doc_month').value = "ตุลาคม";
+      document.getElementById('side_doc_year').value = "2569";
+      document.getElementById('side_applicant_position').value = "นักรังสีการแพทย์";
+      document.getElementById('side_department').value = "รังสีวินิจฉัย";
+      document.getElementById('side_shift_time_1').value = "08.00 - 16.00 น.";
+      document.getElementById('side_exchange_count').value = "1";
+      document.getElementById('side_shift_time_2').value = "08.00 - 16.00 น.";
+      document.getElementById('side_substitute_date').value = "20 ต.ค. 2569";
+      document.getElementById('side_payback_time').value = "16.00 - 24.00 น.";
+      document.getElementById('side_payback_date').value = "25 ต.ค. 2569";
+      document.getElementById('side_reason_1').value = "ติดภารกิจเข้าร่วมการอบรมความปลอดภัยทางรังสีประจำปี";
+      document.getElementById('side_approval_reason').value = "อนุมัติให้แลกเวรตามเสนอ";
+      document.getElementById('side_hr_receive_date').value = "24 ต.ค. 2569";
+
+      syncRadio('approved');
+    }
+
+    function clearForm() {
+      if (!confirm('คุณต้องการล้างข้อมูลทั้งหมดในแบบฟอร์มใช่หรือไม่?')) return;
+      document.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+      document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+      
+      selectPrefix('applicant', '');
+      selectPrefix('substitute', '');
+
+      ['applicant', 'substitute', 'approver', 'hr'].forEach(role => {
+        const img = document.getElementById(`sig_img_${role}`);
+        const prev = document.getElementById(`sig_preview_${role}`);
+        if (img) { img.src = ''; img.classList.add('hidden'); }
+        if (prev) { prev.classList.remove('hidden'); }
+      });
+    }
+
+    function exportPDF() {
+      const element = document.getElementById('document-paper');
+      const opt = {
+        margin: 0,
+        filename: 'ใบแลกเวร_โรงพยาบาลเขลางค์นคร-ราม.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 3, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a5', orientation: 'landscape' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+  </script>
+</body>
+</html>
